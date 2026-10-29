@@ -1,0 +1,197 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VK AUXILIO</title>
+<style>
+*{box-sizing:border-box}
+body{
+  margin:0;padding:20px;min-height:100vh;
+  display:flex;align-items:center;justify-content:center;
+  font-family:Arial,sans-serif;color:white;
+  background:radial-gradient(ellipse at top,#252052,#090b20 60%,#050611);
+}
+.container{width:100%;max-width:480px}
+.logo{text-align:center;color:#b995ff;font-size:30px;font-weight:900;letter-spacing:3px;text-shadow:0 0 18px #9b5cff;margin-bottom:20px}
+.panel{padding:23px 18px;border-radius:22px;background:#121630;border:1px solid #9b5cff66;box-shadow:0 0 30px #6840ff18}
+h2{text-align:center}
+p{color:#a7afd0;text-align:center;font-size:13px;line-height:1.5}
+input[type=password],input[type=text]{
+ width:100%;padding:14px;background:#090d24;color:white;
+ border:1px solid #514779;border-radius:11px;font-size:15px
+}
+button{
+ width:100%;padding:14px;margin-top:11px;border:0;
+ border-radius:11px;background:linear-gradient(100deg,#a855f7,#526dff);
+ color:white;font-weight:bold;cursor:pointer
+}
+button:active{transform:scale(.98)}
+.secondary{background:linear-gradient(100deg,#4355bc,#6c46c9)}
+.dark{background:#20294c;border:1px solid #3a4775}
+.hidden{display:none!important}
+.divider{height:1px;background:#454d7b;margin:20px 0}
+.title{font-size:11px;color:#b9a9ff;letter-spacing:2px;margin:16px 0 9px}
+.feature{display:flex;align-items:center;justify-content:space-between;padding:14px;margin:9px 0;background:#1c2446;border:1px solid #303d68;border-radius:12px;font-size:14px;font-weight:bold}
+.feature input{accent-color:#9b5cff;width:20px;height:20px}
+.status{text-align:center;color:#bdb9e0;font-size:12px;margin-top:13px}
+.keybox{display:none;padding:12px;margin-top:12px;border:1px dashed #9b5cff;border-radius:10px;text-align:center;color:#d7c4ff;overflow-wrap:anywhere}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.note{font-size:11px;color:#8992b8}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="logo">VK AUXILIO</div>
+
+<section class="panel" id="login">
+<h2>Acesso por Key</h2>
+<p>Gere uma key e utilize-a para desbloquear o painel.</p>
+
+<div class="title">GERADOR DE KEY</div>
+<button id="generate">✦ GERAR NOVA KEY</button>
+<div class="keybox" id="keybox">
+  <div id="generatedKey"></div>
+  <button class="secondary" id="copy">COPIAR KEY</button>
+</div>
+
+<div class="divider"></div>
+<div class="title">ENTRAR NO PAINEL</div>
+<form id="keyForm">
+<input type="password" id="key" placeholder="Digite a key gerada" required>
+<button type="submit">DESBLOQUEAR PAINEL ↗</button>
+</form>
+<div class="status" id="loginStatus"></div>
+<p class="note">Protótipo local: as keys ficam salvas neste navegador.</p>
+</section>
+
+<section class="panel hidden" id="dashboard">
+<h2>VK AUXILIO</h2>
+<p>Painel de configurações visuais</p>
+
+<button class="secondary" data-url="https://whatsapp.com/">Canal WhatsApp</button>
+<button class="secondary" data-url="https://whatsapp.com/">Grupo WhatsApp</button>
+<button style="background:#e21b43" data-url="https://youtube.com/">Canal YouTube</button>
+
+<div class="divider"></div>
+<div class="title">CONFIGURAÇÕES VISUAIS</div>
+
+<label class="feature">Calibrar Auxílio
+<input type="checkbox" data-name="Calibrar Auxílio"></label>
+<label class="feature">Headshot (HS)
+<input type="checkbox" data-name="Headshot"></label>
+<label class="feature">Puxar Pixel
+<input type="checkbox" data-name="Puxar Pixel"></label>
+<label class="feature">Grudar Esqueleto
+<input type="checkbox" data-name="Grudar Esqueleto"></label>
+
+<div class="divider"></div>
+<div class="title">ESCOLHA A VERSÃO</div>
+<div class="grid">
+<button class="dark" id="normal">FREE FIRE NORMAL</button>
+<button class="dark" id="max">FREE FIRE MAX</button>
+</div>
+<button id="openGame">ABRIR JOGO ↗</button>
+<div class="status" id="panelStatus">Selecione uma versão.</div>
+<p class="note">As opções são apenas visuais e não modificam o jogo.</p>
+<button class="dark" id="lock">BLOQUEAR PAINEL</button>
+</section>
+</div>
+
+<script>
+const STORAGE="vkAuxilioKeys";
+const $=id=>document.getElementById(id);
+let selectedGame="normal";
+let currentKey="";
+
+function getKeys(){
+ try{return JSON.parse(localStorage.getItem(STORAGE)||"[]")}
+ catch(e){return []}
+}
+
+function generateKey(){
+ const chars="ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+ const bytes=new Uint8Array(12);
+ crypto.getRandomValues(bytes);
+ let key="VK-";
+ for(let i=0;i<bytes.length;i++){
+   key+=chars[bytes[i]%chars.length];
+   if(i===3||i===7)key+="-";
+ }
+ return key;
+}
+
+$("generate").onclick=()=>{
+ currentKey=generateKey();
+ const keys=getKeys();
+ if(!keys.includes(currentKey))keys.push(currentKey);
+ localStorage.setItem(STORAGE,JSON.stringify(keys));
+ $("generatedKey").textContent=currentKey;
+ $("keybox").style.display="block";
+ $("key").value=currentKey;
+ $("loginStatus").textContent="Key gerada!";
+};
+
+$("copy").onclick=async()=>{
+ try{
+   await navigator.clipboard.writeText(currentKey);
+   $("loginStatus").textContent="Key copiada!";
+ }catch(e){
+   $("key").value=currentKey;
+   $("key").select();
+   $("loginStatus").textContent="Copie a key selecionada.";
+ }
+};
+
+$("keyForm").onsubmit=e=>{
+ e.preventDefault();
+ const entered=$("key").value.trim().toUpperCase();
+ if(getKeys().includes(entered)){
+   $("login").classList.add("hidden");
+   $("dashboard").classList.remove("hidden");
+   $("panelStatus").textContent="Acesso liberado!";
+   $("loginStatus").textContent="";
+ }else{
+   $("loginStatus").textContent="Key inválida. Gere uma key primeiro.";
+ }
+};
+
+document.querySelectorAll("[data-name]").forEach(el=>{
+ el.onchange=()=>{
+   $("panelStatus").textContent=el.dataset.name+
+   (el.checked?" ligado (visual).":" desligado (visual).");
+ };
+});
+
+document.querySelectorAll("[data-url]").forEach(btn=>{
+ btn.onclick=()=>window.open(btn.dataset.url,"_blank","noopener");
+});
+
+$("normal").onclick=()=>{
+ selectedGame="normal";
+ $("panelStatus").textContent="Free Fire normal selecionado.";
+};
+$("max").onclick=()=>{
+ selectedGame="max";
+ $("panelStatus").textContent="Free Fire MAX selecionado.";
+};
+
+$("openGame").onclick=()=>{
+ const url=selectedGame==="max"
+ ? "https://play.google.com/store/apps/details?id=com.dts.freefiremax"
+ : "https://play.google.com/store/apps/details?id=com.dts.freefireth";
+ window.location.href=url;
+};
+
+$("lock").onclick=()=>{
+ $("dashboard").classList.add("hidden");
+ $("login").classList.remove("hidden");
+ $("key").value="";
+ document.querySelectorAll("[data-name]").forEach(el=>el.checked=false);
+ selectedGame="normal";
+ $("loginStatus").textContent="Painel bloqueado.";
+};
+</script>
+</body>
+</html>
